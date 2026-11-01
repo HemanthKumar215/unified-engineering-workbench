@@ -144,7 +144,7 @@ src/core  src/server  src/cli  src/frontend
 tests/                                 test runner, malformed fixtures, scaling diagnostic
 data/                                  example STL + synthetic CSV, PROVENANCE.md
 results/                               raw CSV + labelled SVG plots
-docs/                                  report, embedded design, AI-use log, ownership
+docs/                                  report, embedded design, AI-use log
 .vscode/                               tasks.json, launch.json
 vcs/                                   git bundle + readable commit log (ZIP only)
 CMakeLists.txt  scripts/package.cmake
