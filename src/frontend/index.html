@@ -1,0 +1,166 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Unified Engineering Workbench</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="topbar">
+  <div class="brand">Unified Engineering Workbench <span class="muted">v1.0 · C++17 backend on 127.0.0.1</span></div>
+  <nav class="tabs" role="tablist">
+    <button role="tab" data-view="geometry" class="active">Geometry</button>
+    <button role="tab" data-view="thermal">Thermal Analysis</button>
+    <button role="tab" data-view="performance">Performance</button>
+    <button role="tab" data-view="hardware">Hardware</button>
+    <button role="tab" data-view="backprop">Backprop</button>
+  </nav>
+  <button id="quitBtn" class="ghost" title="Stop the local backend and close">Quit</button>
+</header>
+
+<main>
+  <!-- ================= Geometry (Task B) ================= -->
+  <section id="view-geometry" class="view active">
+    <div class="sidebar">
+      <h2>CAD / ANSYS data</h2>
+      <fieldset>
+        <legend>ASCII STL geometry</legend>
+        <input type="file" id="stlFile" accept=".stl">
+        <button id="stlExample" class="ghost">Load bundled example</button>
+        <label>Display unit <select id="stlUnit">
+          <option value="1">m (file units assumed metres)</option>
+          <option value="0.001">file is in mm</option>
+        </select></label>
+      </fieldset>
+      <fieldset>
+        <legend>Nodal temperature CSV</legend>
+        <p class="hint">Columns: <code>node_id,x_m,y_m,z_m,temperature_C</code></p>
+        <input type="file" id="csvFile" accept=".csv,.txt">
+        <button id="csvExample" class="ghost">Load bundled example (synthetic)</button>
+      </fieldset>
+      <fieldset>
+        <legend>Layers</legend>
+        <label><input type="checkbox" id="showMesh" checked> STL triangles</label>
+        <label><input type="checkbox" id="showPoints" checked> Nodal point cloud</label>
+        <label><input type="checkbox" id="showWire"> Wireframe edges</label>
+        <button id="fitBtn">Fit to view</button>
+      </fieldset>
+      <div id="geoInfo" class="info"></div>
+      <p class="hint">Drag = rotate · Shift/right-drag = pan · Wheel = zoom · Click a node to inspect it.
+        STL and CSV are displayed in the same frame; mesh-to-result registration is not performed.</p>
+    </div>
+    <div class="stage">
+      <canvas id="viewer"></canvas>
+      <div id="legend" class="legend hidden"></div>
+      <div id="nodeTip" class="tip hidden"></div>
+    </div>
+  </section>
+
+  <!-- ================= Thermal (Task C) ================= -->
+  <section id="view-thermal" class="view">
+    <div class="sidebar">
+      <h2>1D steady thermal FEA</h2>
+      <p class="hint">−d/dx(kA dT/dx) = qA, two-node linear elements, T(0) and T(L) prescribed, insulated lateral surface.</p>
+      <form id="feaForm" class="grid2">
+        <label>L [m]<input name="L" value="1" inputmode="decimal"></label>
+        <label>A [m²]<input name="A" value="1e-4" inputmode="decimal"></label>
+        <label>k [W/(m·K)]<input name="k" value="10" inputmode="decimal"></label>
+        <label>q [W/m³]<input name="q" value="10000" inputmode="decimal"></label>
+        <label>T(0) [°C]<input name="T0" value="100" inputmode="decimal"></label>
+        <label>T(L) [°C]<input name="TL" value="20" inputmode="decimal"></label>
+        <label class="span2">Meshes N (comma separated)<input name="meshes" value="10,20,40,80"></label>
+        <div class="span2 row">
+          <button type="submit">Solve</button>
+          <button type="button" id="feaReset" class="ghost">Reset to assignment values</button>
+        </div>
+      </form>
+      <button id="feaCsv" class="ghost">Export CSV</button>
+      <button id="feaPng" class="ghost">Export plots (PNG)</button>
+      <div id="feaTable" class="info"></div>
+    </div>
+    <div class="stage plots">
+      <canvas id="feaPlot"></canvas>
+      <canvas id="convPlot"></canvas>
+    </div>
+  </section>
+
+  <!-- ================= Performance (Task D) ================= -->
+  <section id="view-performance" class="view">
+    <div class="sidebar">
+      <h2>Serial vs. parallel batch</h2>
+      <form id="benchForm" class="grid2">
+        <label>Cases<input name="cases" value="96" inputmode="numeric"></label>
+        <label>Elements / case<input name="mesh" value="50000" inputmode="numeric"></label>
+        <label>Repetitions<input name="reps" value="5" inputmode="numeric"></label>
+        <label>Max workers<input name="workers" value="4" inputmode="numeric"></label>
+        <label class="span2">Seed<input name="seed" value="20261101" inputmode="numeric"></label>
+        <div class="span2 row">
+          <button type="submit" id="benchStart">Run benchmark</button>
+          <button type="button" id="benchCancel" class="danger" disabled>Cancel</button>
+        </div>
+      </form>
+      <div class="progress"><div id="benchBar"></div></div>
+      <div id="benchPhase" class="hint">Idle.</div>
+      <button id="benchCsv" class="ghost" disabled>Export CSV</button>
+      <div id="sysInfo" class="info"></div>
+    </div>
+    <div class="stage plots">
+      <canvas id="speedPlot"></canvas>
+      <div id="benchTable" class="info wide"></div>
+    </div>
+  </section>
+
+  <!-- ================= Hardware (Task E) ================= -->
+  <section id="view-hardware" class="view">
+    <div class="sidebar">
+      <h2>Embedded workbench (mock)</h2>
+      <p class="banner">SIMULATED — no USB, serial or JTAG traffic is generated.</p>
+      <button id="hwDiscover">Discover devices</button>
+      <label>Connect attempts <select id="hwAttempts"><option>1</option><option selected>3</option><option>5</option></select></label>
+      <label>Timeout [ms] <input id="hwTimeout" value="300" inputmode="numeric"></label>
+      <p class="hint">Fault injection makes the next handshake or telemetry read time out, so you can see the recovery path.</p>
+      <img src="block_diagram.svg" alt="Block diagram of host, USB hub, MCU, FPGA and JTAG adapter" class="diagram">
+    </div>
+    <div class="stage scroll">
+      <div id="hwDevices" class="cards"></div>
+      <h3>Event log</h3>
+      <div id="hwLog" class="log"></div>
+    </div>
+  </section>
+
+  <!-- ================= Backprop (Task F) ================= -->
+  <section id="view-backprop" class="view">
+    <div class="sidebar">
+      <h2>Handwritten backprop check</h2>
+      <p class="hint">h = tanh(wx + b), ŷ = vh + c, J = ½(ŷ − y)², x = 1, y = 2.</p>
+      <form id="bpForm" class="grid2">
+        <label>w<input name="w" value="0.5"></label>
+        <label>b<input name="b" value="0"></label>
+        <label>v<input name="v" value="1"></label>
+        <label>c<input name="c" value="0"></label>
+        <label>learning rate<input name="lr" value="0.1"></label>
+        <label>steps<input name="steps" value="100"></label>
+        <div class="span2 row"><button type="submit">Compute</button></div>
+      </form>
+      <div id="bpTable" class="info"></div>
+    </div>
+    <div class="stage plots">
+      <canvas id="lossPlot"></canvas>
+    </div>
+  </section>
+</main>
+
+<footer class="statusbar">
+  <span id="statusDot" class="dot"></span>
+  <span id="statusText">Connecting to backend…</span>
+  <span class="spacer"></span>
+  <span id="readyTime" class="muted"></span>
+</footer>
+
+<script src="api.js"></script>
+<script src="plot.js"></script>
+<script src="viewer3d.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
