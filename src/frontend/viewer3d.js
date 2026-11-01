@@ -62,7 +62,10 @@ const Viewer3D = (() => {
       return [[cy, -sy, 0], [sy * sp, cy * sp, cp], [-sy * cp, -cy * cp, sp]];
     }
 
-    render() {
+    // While dragging, large models are drawn as a subsample (~20k items) to stay interactive;
+    // the full model is redrawn when the pointer is released.
+    render(interactive = false) {
+      const LOD_BUDGET = 20000;
       const c = this.canvas, dpr = window.devicePixelRatio || 1;
       const W = c.clientWidth, H = c.clientHeight;
       if (!W || !H) return;
@@ -84,8 +87,9 @@ const Viewer3D = (() => {
 
       if (this.mesh && this.show.mesh) {
         const v = this.mesh.verts, n = v.length / 9;
-        const tris = new Array(n);
-        for (let t = 0; t < n; t++) {
+        const stride = interactive ? Math.max(1, Math.ceil(n / LOD_BUDGET)) : 1;
+        const tris = [];
+        for (let t = 0; t < n; t += stride) {
           const o = 9 * t;
           const a = proj(v[o], v[o + 1], v[o + 2]), b = proj(v[o + 3], v[o + 4], v[o + 5]), d = proj(v[o + 6], v[o + 7], v[o + 8]);
           // Face normal in view space for two-sided Lambert shading.
@@ -94,7 +98,7 @@ const Viewer3D = (() => {
           let nx = uy * wz - uz * wy, ny = uz * wx - ux * wz, nz = ux * wy - uy * wx;
           const len = Math.hypot(nx, ny, nz) || 1;
           const vz = (R[2][0] * nx + R[2][1] * ny + R[2][2] * nz) / len;
-          tris[t] = { a, b, d, depth: (a[2] + b[2] + d[2]) / 3, shade: 0.35 + 0.65 * Math.abs(vz) };
+          tris.push({ a, b, d, depth: (a[2] + b[2] + d[2]) / 3, shade: 0.35 + 0.65 * Math.abs(vz) });
         }
         tris.sort((p, q) => q.depth - p.depth);
         g.lineJoin = "round";
@@ -109,12 +113,13 @@ const Viewer3D = (() => {
         }
       }
 
-      this.projected = null;
+      if (!interactive) this.projected = null;
       if (this.cloud && this.show.points) {
         const { xyz, temp, tMin, tMax } = this.cloud, n = temp.length;
         const span = tMax - tMin || 1;
-        const pts = new Array(n);
-        for (let i = 0; i < n; i++) pts[i] = proj(xyz[3 * i], xyz[3 * i + 1], xyz[3 * i + 2]).concat(i);
+        const stride = interactive ? Math.max(1, Math.ceil(n / LOD_BUDGET)) : 1;
+        const pts = [];
+        for (let i = 0; i < n; i += stride) pts.push(proj(xyz[3 * i], xyz[3 * i + 1], xyz[3 * i + 2]).concat(i));
         const order = pts.slice().sort((p, q) => q[2] - p[2]);
         const size = n > 50000 ? 2 : n > 5000 ? 3 : 5;
         for (const p of order) {
@@ -122,7 +127,7 @@ const Viewer3D = (() => {
           g.fillStyle = `rgb(${r},${gg},${b})`;
           g.fillRect(p[0] - size / 2, p[1] - size / 2, size, size);
         }
-        this.projected = pts;
+        if (!interactive) this.projected = pts;
       }
 
       this._axes(g, R, H);
@@ -169,6 +174,8 @@ const Viewer3D = (() => {
         if (drag && !drag.moved && this.onPick) {
           const r = c.getBoundingClientRect();
           this.onPick(this.pick(e.clientX - r.left, e.clientY - r.top), e.clientX - r.left, e.clientY - r.top);
+        } else if (drag && drag.moved) {
+          this.render();  // full-detail frame after interaction
         }
         drag = null;
       });
@@ -176,12 +183,14 @@ const Viewer3D = (() => {
         e.preventDefault();
         this.zoom = Math.max(0.05, Math.min(200, this.zoom * Math.exp(-e.deltaY * 0.0015)));
         this._schedule();
+        clearTimeout(this._settle);
+        this._settle = setTimeout(() => this.render(), 200);  // full detail once the wheel stops
       }, { passive: false });
     }
 
     _schedule() {
       if (this._raf) return;
-      this._raf = requestAnimationFrame(() => { this._raf = 0; this.render(); });
+      this._raf = requestAnimationFrame(() => { this._raf = 0; this.render(true); });
     }
   }
 

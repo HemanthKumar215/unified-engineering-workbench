@@ -1,0 +1,17 @@
+{
+  // Run and Debug > "Launch Workbench (packaged)" > F5.
+  // Prerequisite: the Microsoft C/C++ extension (ms-vscode.cpptools), which provides "cppvsdbg".
+  // Without it, use Terminal > Run Task > "Launch Workbench" (tasks.json), which needs no extension.
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Launch Workbench (packaged)",
+      "type": "cppvsdbg",
+      "request": "launch",
+      "program": "${workspaceFolder}/Launch.exe",
+      "args": [],
+      "cwd": "${workspaceFolder}",
+      "console": "internalConsole"
+    }
+  ]
+}

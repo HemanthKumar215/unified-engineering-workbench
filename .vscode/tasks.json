@@ -1,0 +1,25 @@
+{
+  // One-action run: Terminal > Run Task... > "Launch Workbench" (no extension required).
+  // It starts the same packaged Launch.exe that a double-click starts.
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Launch Workbench",
+      "type": "process",
+      "command": "${workspaceFolder}/Launch.exe",
+      "options": { "cwd": "${workspaceFolder}" },
+      "isBackground": true,
+      "problemMatcher": [],
+      "presentation": { "reveal": "silent", "panel": "dedicated" },
+      "group": { "kind": "build", "isDefault": true }
+    },
+    {
+      "label": "Run tests (packaged wb_tests.exe)",
+      "type": "process",
+      "command": "${workspaceFolder}/wb_tests.exe",
+      "args": ["${workspaceFolder}/tests/data"],
+      "options": { "cwd": "${workspaceFolder}" },
+      "problemMatcher": []
+    }
+  ]
+}
