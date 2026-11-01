@@ -4,3 +4,4 @@ logs/
 *.zip
 *.bundle
 .vs/
+personal_guides/
