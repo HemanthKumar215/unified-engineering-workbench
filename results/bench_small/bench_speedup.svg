@@ -1,0 +1,40 @@
+<svg xmlns='http://www.w3.org/2000/svg' width='760' height='480' viewBox='0 0 760 480' font-family='Segoe UI, Arial, sans-serif' font-size='12'>
+<rect width='100%' height='100%' fill='white'/>
+<text x='380' y='24' text-anchor='middle' font-size='15' font-weight='600'>Batch speedup T1/Tp (96 cases x 50000 elements)</text>
+<line x1='80' y1='44' x2='80' y2='420' stroke='#e5e7eb'/>
+<text x='80' y='438' text-anchor='middle'>1</text>
+<line x1='161.667' y1='44' x2='161.667' y2='420' stroke='#e5e7eb'/>
+<text x='161.667' y='438' text-anchor='middle'>1.5</text>
+<line x1='243.333' y1='44' x2='243.333' y2='420' stroke='#e5e7eb'/>
+<text x='243.333' y='438' text-anchor='middle'>2</text>
+<line x1='325' y1='44' x2='325' y2='420' stroke='#e5e7eb'/>
+<text x='325' y='438' text-anchor='middle'>2.5</text>
+<line x1='406.667' y1='44' x2='406.667' y2='420' stroke='#e5e7eb'/>
+<text x='406.667' y='438' text-anchor='middle'>3</text>
+<line x1='488.333' y1='44' x2='488.333' y2='420' stroke='#e5e7eb'/>
+<text x='488.333' y='438' text-anchor='middle'>3.5</text>
+<line x1='570' y1='44' x2='570' y2='420' stroke='#e5e7eb'/>
+<text x='570' y='438' text-anchor='middle'>4</text>
+<line x1='80' y1='402.909' x2='570' y2='402.909' stroke='#e5e7eb'/>
+<text x='72' y='406.909' text-anchor='end'>1</text>
+<line x1='80' y1='288.97' x2='570' y2='288.97' stroke='#e5e7eb'/>
+<text x='72' y='292.97' text-anchor='end'>2</text>
+<line x1='80' y1='175.03' x2='570' y2='175.03' stroke='#e5e7eb'/>
+<text x='72' y='179.03' text-anchor='end'>3</text>
+<line x1='80' y1='61.0909' x2='570' y2='61.0909' stroke='#e5e7eb'/>
+<text x='72' y='65.0909' text-anchor='end'>4</text>
+<rect x='80' y='44' width='490' height='376' fill='none' stroke='#374151'/>
+<text x='325' y='464' text-anchor='middle' font-size='13'>worker threads p</text>
+<text transform='translate(20,232) rotate(-90)' text-anchor='middle' font-size='13'>speedup T1/Tp [-]</text>
+<polyline fill='none' stroke='#9ca3af' stroke-width='1.8' stroke-dasharray='6 4' points='80,402.909 243.333,288.97 570,61.0909 '/>
+<line x1='584' y1='54' x2='608' y2='54' stroke='#9ca3af' stroke-width='2' stroke-dasharray='6 4'/>
+<text x='614' y='58'>ideal (speedup = p)</text>
+<polyline fill='none' stroke='#2563eb' stroke-width='1.8' points='80,402.909 243.333,281.118 570,105.778 '/>
+<line x1='584' y1='74' x2='608' y2='74' stroke='#2563eb' stroke-width='2'/>
+<text x='614' y='78'>measured</text>
+<circle cx='80' cy='402.909' r='3.5' fill='#2563eb'/>
+<circle cx='243.333' cy='281.118' r='3.5' fill='#2563eb'/>
+<circle cx='570' cy='105.778' r='3.5' fill='#2563eb'/>
+<circle cx='596' cy='94' r='3.5' fill='#2563eb'/>
+<text x='614' y='98'>median of reps</text>
+</svg>

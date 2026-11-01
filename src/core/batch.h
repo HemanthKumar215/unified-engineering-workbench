@@ -36,6 +36,7 @@ struct Cancelled : std::runtime_error {
 
 // Fixed-size pool of std::threads. parallelFor hands out indices dynamically through an
 // atomic counter; the calling thread only waits, so exactly `workers` threads compute.
+// The task receives (index, worker) so callers can keep per-worker scratch state.
 class WorkerPool {
 public:
     explicit WorkerPool(int workers);
@@ -44,15 +45,15 @@ public:
     WorkerPool& operator=(const WorkerPool&) = delete;
 
     int size() const { return static_cast<int>(threads_.size()); }
-    void parallelFor(std::size_t count, const std::function<void(std::size_t)>& fn);
+    void parallelFor(std::size_t count, const std::function<void(std::size_t, int)>& fn);
 
 private:
-    void workerLoop();
+    void workerLoop(int worker);
 
     std::vector<std::thread> threads_;
     std::mutex mu_;
     std::condition_variable wake_, done_;
-    const std::function<void(std::size_t)>* task_ = nullptr;
+    const std::function<void(std::size_t, int)>* task_ = nullptr;
     std::size_t count_ = 0;
     std::atomic<std::size_t> next_{0};
     std::uint64_t generation_ = 0;
@@ -64,6 +65,11 @@ private:
 using BatchResults = std::vector<std::vector<double>>;  // nodal temperatures, input order
 
 // Both throw Cancelled if *cancel becomes true; partial results are never returned.
+// The overloads taking `out` reuse its existing buffers (no allocation on repeated runs).
+void solveSerial(const std::vector<RodProblem>& cases, int elements, BatchResults& out,
+                 const std::atomic<bool>* cancel = nullptr);
+void solveParallel(WorkerPool& pool, const std::vector<RodProblem>& cases, int elements, BatchResults& out,
+                   const std::atomic<bool>* cancel = nullptr);
 BatchResults solveSerial(const std::vector<RodProblem>& cases, int elements, const std::atomic<bool>* cancel = nullptr);
 BatchResults solveParallel(WorkerPool& pool, const std::vector<RodProblem>& cases, int elements,
                            const std::atomic<bool>* cancel = nullptr);
@@ -77,6 +83,7 @@ struct WorkerTiming {
     double speedup = 0;           // T1 / Tp
     double efficiency = 0;        // speedup / p
     double maxAbsDiffVsSerial = 0;
+    unsigned long long pageFaults = 0;  // during measured runs (OS counter)
 };
 
 struct BenchmarkReport {

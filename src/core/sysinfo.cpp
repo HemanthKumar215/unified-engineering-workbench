@@ -10,6 +10,7 @@
 #define NOMINMAX
 #endif
 #include <windows.h>
+#include <psapi.h>
 #endif
 #if defined(__GNUC__) && (defined(__x86_64__) || defined(__i386__))
 #include <cpuid.h>
@@ -80,6 +81,14 @@ SystemInfo querySystemInfo() {
     si.os = "non-Windows";
 #endif
     return si;
+}
+
+unsigned long long processPageFaults() {
+#if defined(_WIN32)
+    PROCESS_MEMORY_COUNTERS pmc{};
+    if (GetProcessMemoryInfo(GetCurrentProcess(), &pmc, sizeof(pmc))) return pmc.PageFaultCount;
+#endif
+    return 0;
 }
 
 }  // namespace wb

@@ -1,5 +1,7 @@
 #include "batch.h"
 
+#include "sysinfo.h"
+
 #include <algorithm>
 #include <chrono>
 #include <cmath>
@@ -44,7 +46,7 @@ std::vector<RodProblem> generateBatch(std::uint64_t seed, int count) {
 WorkerPool::WorkerPool(int workers) {
     if (workers < 1) throw std::invalid_argument("WorkerPool needs at least one worker");
     threads_.reserve(static_cast<std::size_t>(workers));
-    for (int i = 0; i < workers; ++i) threads_.emplace_back([this] { workerLoop(); });
+    for (int i = 0; i < workers; ++i) threads_.emplace_back([this, i] { workerLoop(i); });
 }
 
 WorkerPool::~WorkerPool() {
@@ -56,7 +58,7 @@ WorkerPool::~WorkerPool() {
     for (auto& t : threads_) t.join();
 }
 
-void WorkerPool::parallelFor(std::size_t count, const std::function<void(std::size_t)>& fn) {
+void WorkerPool::parallelFor(std::size_t count, const std::function<void(std::size_t, int)>& fn) {
     std::unique_lock<std::mutex> lk(mu_);
     task_ = &fn;
     count_ = count;
@@ -70,10 +72,10 @@ void WorkerPool::parallelFor(std::size_t count, const std::function<void(std::si
     if (error_) std::rethrow_exception(error_);
 }
 
-void WorkerPool::workerLoop() {
+void WorkerPool::workerLoop(int worker) {
     std::uint64_t seen = 0;
     for (;;) {
-        const std::function<void(std::size_t)>* task;
+        const std::function<void(std::size_t, int)>* task;
         std::size_t count;
         {
             std::unique_lock<std::mutex> lk(mu_);
@@ -84,7 +86,7 @@ void WorkerPool::workerLoop() {
             count = count_;
         }
         try {
-            for (std::size_t i = next_.fetch_add(1); i < count; i = next_.fetch_add(1)) (*task)(i);
+            for (std::size_t i = next_.fetch_add(1); i < count; i = next_.fetch_add(1)) (*task)(i, worker);
         } catch (...) {
             std::lock_guard<std::mutex> lk(mu_);
             if (!error_) error_ = std::current_exception();
@@ -100,22 +102,37 @@ void WorkerPool::workerLoop() {
 
 // ---------------- Solves ----------------
 
-BatchResults solveSerial(const std::vector<RodProblem>& cases, int elements, const std::atomic<bool>* cancel) {
-    BatchResults out(cases.size());
+void solveSerial(const std::vector<RodProblem>& cases, int elements, BatchResults& out, const std::atomic<bool>* cancel) {
+    out.resize(cases.size());
+    FeaWorkspace ws;
     for (std::size_t i = 0; i < cases.size(); ++i) {
         if (cancelled(cancel)) throw Cancelled();
-        out[i] = solveRod(cases[i], elements).T_C;
+        solveRodTemperatures(cases[i], elements, ws, out[i]);
     }
+}
+
+void solveParallel(WorkerPool& pool, const std::vector<RodProblem>& cases, int elements, BatchResults& out,
+                   const std::atomic<bool>* cancel) {
+    out.resize(cases.size());  // each slot written by exactly one task -> deterministic order, no locks
+    // One workspace per worker, indexed explicitly. (thread_local crashed at thread exit with
+    // statically linked MinGW, so per-thread state is passed in rather than hidden in TLS.)
+    std::vector<FeaWorkspace> ws(static_cast<std::size_t>(pool.size()));
+    pool.parallelFor(cases.size(), [&](std::size_t i, int worker) {
+        if (cancelled(cancel)) throw Cancelled();
+        solveRodTemperatures(cases[i], elements, ws[static_cast<std::size_t>(worker)], out[i]);
+    });
+}
+
+BatchResults solveSerial(const std::vector<RodProblem>& cases, int elements, const std::atomic<bool>* cancel) {
+    BatchResults out;
+    solveSerial(cases, elements, out, cancel);
     return out;
 }
 
 BatchResults solveParallel(WorkerPool& pool, const std::vector<RodProblem>& cases, int elements,
                            const std::atomic<bool>* cancel) {
-    BatchResults out(cases.size());  // each slot written by exactly one task -> deterministic order, no locks
-    pool.parallelFor(cases.size(), [&](std::size_t i) {
-        if (cancelled(cancel)) throw Cancelled();
-        out[i] = solveRod(cases[i], elements).T_C;
-    });
+    BatchResults out;
+    solveParallel(pool, cases, elements, out, cancel);
     return out;
 }
 
@@ -160,15 +177,17 @@ BenchmarkReport runBenchmark(const BatchConfig& cfg, const std::atomic<bool>* ca
         if (progress) progress(runsDone / totalRuns, phase);
     };
 
-    // Serial reference.
-    BatchResults reference;
+    // Output buffers are allocated during the warm-up run and reused by the measured runs,
+    // so timings measure solving rather than first-touch page faults (see docs/report.md).
+    BatchResults reference, res;
     rep.serial.workers = 1;
     for (int r = 0; r < runsPerConfig; ++r) {
+        const auto pf0 = processPageFaults();
         const auto t0 = clock::now();
-        auto res = solveSerial(cases, cfg.elements, cancel);
+        solveSerial(cases, cfg.elements, r == 0 ? reference : res, cancel);
+        if (r > 0) rep.serial.pageFaults += processPageFaults() - pf0;
         const double s = std::chrono::duration<double>(clock::now() - t0).count();
-        if (r == 0) reference = std::move(res);  // warm-up run doubles as the reference result
-        else rep.serial.seconds.push_back(s);
+        if (r > 0) rep.serial.seconds.push_back(s);  // warm-up run doubles as the reference result
         tick(r == 0 ? "serial warm-up" : "serial run " + std::to_string(r));
     }
     rep.serial.median = median(rep.serial.seconds);
@@ -179,9 +198,11 @@ BenchmarkReport runBenchmark(const BatchConfig& cfg, const std::atomic<bool>* ca
         WorkerTiming t;
         t.workers = w;
         for (int r = 0; r < runsPerConfig; ++r) {
+            const auto pf0 = processPageFaults();
             const auto t0 = clock::now();
-            auto res = solveParallel(pool, cases, cfg.elements, cancel);
+            solveParallel(pool, cases, cfg.elements, res, cancel);
             const double s = std::chrono::duration<double>(clock::now() - t0).count();
+            if (r > 0) t.pageFaults += processPageFaults() - pf0;
             if (r > 0) t.seconds.push_back(s);
             t.maxAbsDiffVsSerial = std::max(t.maxAbsDiffVsSerial, maxAbsDifference(reference, res));
             tick(std::to_string(w) + " worker(s) " + (r == 0 ? "warm-up" : "run " + std::to_string(r)));

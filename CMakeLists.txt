@@ -38,6 +38,9 @@ target_compile_definitions(wb_core PRIVATE
   WB_OPT_FLAGS="${WB_OPT_FLAGS}")
 find_package(Threads REQUIRED)
 target_link_libraries(wb_core PUBLIC Threads::Threads)
+if(WIN32)
+  target_link_libraries(wb_core PUBLIC psapi)
+endif()
 
 # ---- Launch.exe: local HTTP transport + static UI host ----
 add_executable(Launch
@@ -73,6 +76,10 @@ if(MINGW)
   target_link_options(wb_tests PRIVATE -static -static-libgcc -static-libstdc++)
 endif()
 add_test(NAME wb_tests COMMAND wb_tests ${CMAKE_SOURCE_DIR}/tests/data)
+
+# Diagnostic used in docs/report.md (scaling investigation); not part of the test suite.
+add_executable(wb_diag_scaling tests/diag_scaling.cpp)
+target_link_libraries(wb_diag_scaling PRIVATE wb_core)
 
 # ---- Packaging: cmake --install build --prefix dist/Workbench ----
 install(TARGETS Launch wb_cli RUNTIME DESTINATION .)

@@ -1,0 +1,5 @@
+mode,workers,median_s,speedup_T1_over_Tp,efficiency,max_abs_diff_vs_serial_C,page_faults_per_run
+serial,1,0.2054489,1.04797,1.04797,0,7518
+pool,1,0.2153039,1,1,0,0
+pool,2,0.3468221,0.620791,0.310395,0,48
+pool,4,0.1779881,1.20965,0.302413,0,1122

@@ -23,7 +23,7 @@ std::string validate(const RodProblem& p, int elements) {
     return {};
 }
 
-FeaSolution solveRod(const RodProblem& p, int elements) {
+void solveRodTemperatures(const RodProblem& p, int elements, FeaWorkspace& ws, std::vector<double>& T) {
     const std::string err = validate(p, elements);
     if (!err.empty()) throw std::invalid_argument(err);
 
@@ -34,7 +34,15 @@ FeaSolution solveRod(const RodProblem& p, int elements) {
     const double fe = p.q_W_m3 * p.area_m2 * h / 2.0;  // nodal share of generated heat [W]
 
     // Global tridiagonal system: lower (a), diagonal (d), upper (c), right-hand side (f).
-    std::vector<double> a(nodes, 0.0), d(nodes, 0.0), c(nodes, 0.0), f(nodes, 0.0);
+    // assign() reuses existing capacity, so repeated solves on one workspace do not allocate.
+    auto& a = ws.a;
+    auto& d = ws.d;
+    auto& c = ws.c;
+    auto& f = ws.f;
+    a.assign(nodes, 0.0);
+    d.assign(nodes, 0.0);
+    c.assign(nodes, 0.0);
+    f.assign(nodes, 0.0);
     for (int e = 0; e < n; ++e) {
         const int i = e, j = e + 1;
         d[i] += ke;
@@ -45,19 +53,13 @@ FeaSolution solveRod(const RodProblem& p, int elements) {
         f[j] += fe;
     }
 
+    T.assign(nodes, 0.0);
+    T[0] = p.T0_C;
+    T[nodes - 1] = p.TL_C;
+    if (nodes == 2) return;  // single element: both DOFs are prescribed
+
     // Dirichlet BCs by elimination: move the known column to the RHS, then replace
     // the constrained row with the identity. This keeps the reduced system symmetric.
-    FeaSolution s;
-    s.elements = n;
-    s.x_m.resize(nodes);
-    s.T_C.assign(nodes, 0.0);
-    for (int i = 0; i < nodes; ++i) s.x_m[i] = p.length_m * static_cast<double>(i) / n;
-
-    if (nodes == 2) {  // single element: both DOFs are prescribed
-        s.T_C[0] = p.T0_C;
-        s.T_C[1] = p.TL_C;
-        return s;
-    }
     f[1] -= a[1] * p.T0_C;
     a[1] = 0.0;
     f[nodes - 2] -= c[nodes - 2] * p.TL_C;
@@ -65,7 +67,10 @@ FeaSolution solveRod(const RodProblem& p, int elements) {
 
     // Thomas algorithm on the interior unknowns 1..nodes-2.
     const int first = 1, last = nodes - 2;
-    std::vector<double> cp(nodes, 0.0), fp(nodes, 0.0);
+    auto& cp = ws.cp;
+    auto& fp = ws.fp;
+    cp.assign(nodes, 0.0);
+    fp.assign(nodes, 0.0);
     cp[first] = c[first] / d[first];
     fp[first] = f[first] / d[first];
     for (int i = first + 1; i <= last; ++i) {
@@ -73,11 +78,17 @@ FeaSolution solveRod(const RodProblem& p, int elements) {
         cp[i] = c[i] / m;
         fp[i] = (f[i] - a[i] * fp[i - 1]) / m;
     }
-    s.T_C[last] = fp[last];
-    for (int i = last - 1; i >= first; --i) s.T_C[i] = fp[i] - cp[i] * s.T_C[i + 1];
+    T[last] = fp[last];
+    for (int i = last - 1; i >= first; --i) T[i] = fp[i] - cp[i] * T[i + 1];
+}
 
-    s.T_C[0] = p.T0_C;
-    s.T_C[nodes - 1] = p.TL_C;
+FeaSolution solveRod(const RodProblem& p, int elements) {
+    FeaWorkspace ws;
+    FeaSolution s;
+    solveRodTemperatures(p, elements, ws, s.T_C);
+    s.elements = elements;
+    s.x_m.resize(s.T_C.size());
+    for (std::size_t i = 0; i < s.x_m.size(); ++i) s.x_m[i] = p.length_m * static_cast<double>(i) / elements;
     return s;
 }
 

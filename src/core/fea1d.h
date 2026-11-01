@@ -25,6 +25,12 @@ struct FeaSolution {
     std::vector<double> T_C;     // nodal temperatures
 };
 
+// Scratch buffers for the assembled tridiagonal system. Reusing one per thread avoids
+// allocating six vectors per solve, which dominated multi-threaded batch runs (see docs/report.md).
+struct FeaWorkspace {
+    std::vector<double> a, d, c, f, cp, fp;
+};
+
 // Returns an empty string if the problem is physically valid, else a user-facing reason.
 std::string validate(const RodProblem& p, int elements);
 
@@ -33,6 +39,9 @@ std::string validate(const RodProblem& p, int elements);
 // and solves the resulting tridiagonal system with the Thomas algorithm.
 // Throws std::invalid_argument if validate() fails.
 FeaSolution solveRod(const RodProblem& p, int elements);
+
+// Same solve, writing only nodal temperatures into T (resized to elements+1) using `ws`.
+void solveRodTemperatures(const RodProblem& p, int elements, FeaWorkspace& ws, std::vector<double>& T);
 
 // Analytical solution for constant k, A, q:  T = T0 + (TL-T0) x/L + q/(2k) x (L-x).
 double exactTemperature(const RodProblem& p, double x_m);

@@ -1,0 +1,14 @@
+cpu,Intel(R) Core(TM) i7-14650HX
+physical_cores,16
+logical_cpus,24
+ram_GiB,15.61
+os,Windows
+compiler,GNU 16.2.0
+optimisation_flags,-O3 -DNDEBUG
+seed,20261101
+cases,96
+elements_per_case,50000
+warmup_runs,1
+measured_repetitions,5
+agreement_tolerance_C,1e-8
+agreement_ok,true

@@ -248,18 +248,18 @@ void testParallelMatchesSerial() {
 void testPoolReuseAndExceptions() {
     wb::WorkerPool pool(3);
     std::atomic<int> sum{0};
-    for (int round = 0; round < 5; ++round) pool.parallelFor(100, [&](std::size_t i) { sum += static_cast<int>(i); });
+    for (int round = 0; round < 5; ++round) pool.parallelFor(100, [&](std::size_t i, int) { sum += static_cast<int>(i); });
     CHECK(sum == 5 * 4950);
     bool threw = false;
     try {
-        pool.parallelFor(10, [](std::size_t i) {
+        pool.parallelFor(10, [](std::size_t i, int) {
             if (i == 3) throw std::runtime_error("boom");
         });
     } catch (const std::runtime_error&) {
         threw = true;
     }
     CHECK(threw);
-    pool.parallelFor(4, [&](std::size_t) { ++sum; });  // pool still usable afterwards
+    pool.parallelFor(4, [&](std::size_t, int) { ++sum; });  // pool still usable afterwards
     CHECK(sum == 5 * 4950 + 4);
 }
 

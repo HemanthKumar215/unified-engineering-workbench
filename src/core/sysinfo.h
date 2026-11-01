@@ -16,4 +16,7 @@ struct SystemInfo {
 
 SystemInfo querySystemInfo();
 
+// Cumulative page faults (soft + hard) of this process; 0 where unsupported.
+unsigned long long processPageFaults();
+
 }  // namespace wb

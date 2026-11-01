@@ -173,18 +173,19 @@ bool cmdBench(const std::string& dir, const wb::BatchConfig& cfg) {
 
     std::ostringstream raw, sum, env;
     raw << "mode,workers,repetition,seconds\n";
-    sum << "mode,workers,median_s,speedup_T1_over_Tp,efficiency,max_abs_diff_vs_serial_C\n";
+    sum << "mode,workers,median_s,speedup_T1_over_Tp,efficiency,max_abs_diff_vs_serial_C,page_faults_per_run\n";
+    const auto perRun = [&](const wb::WorkerTiming& t) { return t.pageFaults / static_cast<unsigned long long>(cfg.repetitions); };
     auto rows = [&](const std::string& mode, const wb::WorkerTiming& t) {
         for (std::size_t i = 0; i < t.seconds.size(); ++i)
             raw << mode << ',' << t.workers << ',' << i + 1 << ',' << formatNumber(t.seconds[i], 9) << "\n";
         sum << mode << ',' << t.workers << ',' << formatNumber(t.median, 9) << ',' << formatNumber(t.speedup, 6) << ','
-            << formatNumber(t.efficiency, 6) << ',' << formatNumber(t.maxAbsDiffVsSerial, 6) << "\n";
+            << formatNumber(t.efficiency, 6) << ',' << formatNumber(t.maxAbsDiffVsSerial, 6) << ',' << perRun(t) << "\n";
     };
     rows("serial", rep.serial);
     for (const auto& t : rep.pool) {
         rows("pool", t);
-        std::printf("  pool %d worker(s): median %.4f s  speedup %.2f  efficiency %.2f  max|diff| %.1e C\n", t.workers,
-                    t.median, t.speedup, t.efficiency, t.maxAbsDiffVsSerial);
+        std::printf("  pool %d worker(s): median %.4f s  speedup %.2f  efficiency %.2f  max|diff| %.1e C  page faults/run %llu\n",
+                    t.workers, t.median, t.speedup, t.efficiency, t.maxAbsDiffVsSerial, perRun(t));
     }
     std::printf("  serial loop:      median %.4f s   agreement %s\n", rep.serial.median, rep.agreementOk ? "OK" : "FAILED");
 
