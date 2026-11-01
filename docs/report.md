@@ -165,3 +165,18 @@ The C++ central differences (ε = 1e-6) agree to at most 1.13e-10, well within 1
 - The hardware is fully simulated.
 - MSVC builds are untested.
 - Windows SmartScreen may warn about the unsigned `Launch.exe`.
+
+## 9. Ownership statement
+
+**Reused work**
+- **Code:** no third-party source code or libraries. The project uses only the C++ standard library and the Win32 API; the frontend uses no external JavaScript libraries.
+- **Toolchain (not redistributed):** WinLibs MinGW-w64 GCC 16.2.0, CMake 4.4.4 and Ninja 1.13.2. GCC's runtime is linked statically under the GCC Runtime Library Exception (libgcc, libstdc++) and an MIT-style licence (winpthreads).
+- **Standard methods:** the 1D linear finite-element formulation, Dirichlet elimination, the Thomas algorithm, the derivative of tanh, and the ASCII STL grammar are textbook material, implemented here from their standard definitions.
+- **Data:** none reused. All example and test data is self-created (CC0); the nodal CSV is synthetic (`data/PROVENANCE.md`).
+
+**Original work for this assignment**
+- **Produced for this submission:** the architecture, the C++ core, server and CLI, the browser UI, the tests and fixtures, the example data, the benchmark investigation, the embedded design and this documentation. How they were produced, including all tools and assistance used, is disclosed in `docs/ai_use_log.md`.
+- **Handwritten by the candidate:** the backpropagation derivation (appendix).
+- **Recorded by the candidate:** the demonstration video.
+
+Signed: `<name>`, `<candidate ID>`, `<date>`
