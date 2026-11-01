@@ -18,7 +18,7 @@
 3. `"C:\Users\…\passscince/" use this folder`
 4. `ok can u continue`
 
-**What the AI produced:** the whole code base in this repository (C++ core, server, CLI, tests, frontend), the example data, the packaging script, the README and these docs. Every commit carries a `Co-Authored-By: Claude` trailer.
+**What the AI produced:** the whole code base in this repository (C++ core, server, CLI, tests, frontend), the example data, the packaging script, the README and these docs. (The commits were originally made with a `Co-Authored-By: Claude` trailer; the candidate later removed these trailers from the Git history. This log is the authoritative AI-use record.)
 
 **How the AI validated its output:**
 - `wb_tests` (23 tests, 260 checks);

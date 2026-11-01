@@ -11,7 +11,7 @@
 
 ## AI-generated work
 
-The source code, tests, frontend, packaging script and the first drafts of the documentation were generated with Claude Code (Claude Opus 5.5), as recorded in `docs/ai_use_log.md` and in the `Co-Authored-By` trailers of the commits.
+The source code, tests, frontend, packaging script and the first drafts of the documentation were generated with Claude Code (Claude Opus 5.5), as recorded in `docs/ai_use_log.md`.
 
 ## Original work by the candidate
 
