@@ -1,6 +1,6 @@
 # Unified Engineering Workbench: Technical Report
 
-*Pass Science Works R&D Internship 2026–27, common technical assignment. Candidate: `<CandidateID>`. Recorded effort: `<fill in actual hours>`.*
+*Pass Science Works R&D Internship 2026–27, common technical assignment. Candidate: P Hemanth Kumar (RA2311003011874). Recorded effort: `<fill in actual hours>`.*
 
 ## 1. Design choices
 
@@ -179,4 +179,4 @@ The C++ central differences (ε = 1e-6) agree to at most 1.13e-10, well within 1
 - **Handwritten by the candidate:** the backpropagation derivation (appendix).
 - **Recorded by the candidate:** the demonstration video.
 
-Signed: `<name>`, `<candidate ID>`, `<date>`
+Signed: P Hemanth Kumar, RA2311003011874, 1 November 2026
