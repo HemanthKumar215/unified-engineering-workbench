@@ -138,7 +138,7 @@ The simultaneous update with η = 0.1 gives w = 0.6209464475, b = 0.1209464475, 
 
 All four gradients are negative: ŷ is below the target, and increasing any parameter raises ŷ, so descent increases all four.
 
-The C++ central differences (ε = 1e-6) agree to at most 1.13e-10, well within 1e-5. Over the next 100 steps the loss falls from 0.686 to 1.1e-20 (`results/backprop_loss.svg`). The fall is fast and monotone because a single sample can be fitted exactly. Near the optimum the loss is locally quadratic, so the error contracts by a roughly constant factor per step (linear convergence, a straight line on a log scale). It finally levels off at the floating-point limit. The handwritten derivation is in the appendix (two pages, scanned).
+The C++ central differences (ε = 1e-6) agree to at most 1.13e-10, well within 1e-5. Over the next 100 steps the loss falls from 0.686 to 1.1e-20 (`results/backprop_loss.svg`). The fall is fast and monotone because a single sample can be fitted exactly. Near the optimum the loss is locally quadratic, so the error contracts by a roughly constant factor per step (linear convergence, a straight line on a log scale). It finally levels off at the floating-point limit. The handwritten derivation is in the appendix: `docs/backprop_handwritten.pdf` (two pages, scanned).
 
 ## 7. Test outcomes
 
