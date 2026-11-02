@@ -1,6 +1,6 @@
 # Unified Engineering Workbench: Technical Report
 
-*Pass Science Works R&D Internship 2026–27, common technical assignment. Candidate: P Hemanth Kumar (RA2311003011874). Recorded effort: `<fill in actual hours>`.*
+*Pass Science Works R&D Internship 2026–27, common technical assignment. Candidate: P Hemanth Kumar (RA2311003011874). Recorded effort: 10 hours.*
 
 ## 1. Design choices
 
